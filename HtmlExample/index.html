@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1 id="a">Overskrift</h1>
+    <p id="b">jklsdfgljkfsdg</p>
+    <button id="c">Hei</button>
+
+
+    <script>
+
+        let actions = [
+            { id: 'a', newInnerHtml: 'Terje' },
+            { id: 'b', newInnerHtml: 'Terje' },
+            { id: 'c', newInnerHtml: 'Terje' },
+        ];
+
+        doActions(actions);
+
+        function doActions(actions){
+            for(action of actions){
+                document.getElementById(action.id).innerHTML = action.newInnerHtml;
+            }
+        }
+
+    </script>
+
+
+
+</body>
+
+</html>
