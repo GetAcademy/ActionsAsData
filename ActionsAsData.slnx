@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="FileClickerSimple/FileClickerSimple.csproj" />
+  <Project Path="Newsletter/NewsletterSimple.csproj" />
+  <Project Path="NewsletterPureCore/NewsletterPureCore.csproj" />
 </Solution>
