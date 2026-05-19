@@ -2,17 +2,39 @@
 
 var service = new NewsletterService();
 
+// Input = "lese data"
 Console.Write("E-post: ");
 string? email = Console.ReadLine();
 
-// INPUT / IO
 var subscriptions = Infrastructure.LoadSubscriptions();
 Subscription? existing = subscriptions.FirstOrDefault(s => s.Email == email);
 
+// Ren logikk
 var result = NewsletterService.Subscribe(email, existing);
 
-Console.WriteLine(result);
+// Output = "lagre data"
+if (result.Subscription != null)
+{
+    subscriptions.Add(result.Subscription);
+    Infrastructure.SaveSubscriptions(subscriptions);
+}
 
+if (result.EmailToSend != null)
+{
+    Infrastructure.SendEmail(result.EmailToSend);
+}
+
+if (result.Message != null)
+{
+    Console.WriteLine(result.Message);
+} else if (result.ErrorMessage != null)
+{
+    Console.WriteLine(result.ErrorMessage);
+}
+
+
+
+public record SubscribeResult(Subscription? Subscription, EmailToSend? EmailToSend, string? Message, string? ErrorMessage);
 
 // =====================
 // Application/service
@@ -20,45 +42,34 @@ Console.WriteLine(result);
 
 public class NewsletterService
 {
-    private const string _databaseFile = "subscriptions.json";
-    private const string _emailOutboxFolder = "email-outbox";
-
-    public static string Subscribe(string emailInput, Subscription? existing)
+    public static SubscribeResult Subscribe(string emailInput, Subscription? existing)
     {
         var emailResult = EmailAddress.Create(emailInput);
-        if (!emailResult.IsSuccess) return emailResult.Error!;
+        if (!emailResult.IsSuccess) return new SubscribeResult(null, null, null, emailResult.Error);
         var email = emailResult.Value!;
 
         if (existing is null)
         {
             var subscription = Subscription.CreateUnconfirmed(email);
-            subscriptions.Add(subscription);
-
             var emailToSend = EmailToSend.CreateConfirmation(email);
-
-            // OUTPUT / IO
-            SaveSubscriptions(subscriptions);
-            SendEmail(emailToSend);
-
-            return "Subscription created.";
+            return new SubscribeResult(subscription, emailToSend, "Subscription created.", null);
         }
 
         if (!existing.IsConfirmed)
         {
             var emailToSend = EmailToSend.CreateConfirmation(email);
-
-            // OUTPUT / IO
-            SendEmail(emailToSend);
-
-            return "Confirmation email resent.";
+            return new SubscribeResult(null, emailToSend, "Confirmation email resent.", null);
         }
 
-        return "Email address is already confirmed.";
+        return new SubscribeResult(null, null, "Email address is already confirmed.", null);
     }
 }
 
 class Infrastructure
 {
+    private const string _databaseFile = "subscriptions.json";
+    private const string _emailOutboxFolder = "email-outbox";
+
     public static List<Subscription> LoadSubscriptions()
     {
         if (!File.Exists(_databaseFile))
@@ -72,7 +83,7 @@ class Infrastructure
             ?? new List<Subscription>();
     }
 
-    private static void SaveSubscriptions(List<Subscription> subscriptions)
+    public static void SaveSubscriptions(List<Subscription> subscriptions)
     {
         var json = JsonSerializer.Serialize(
             subscriptions,
@@ -81,7 +92,7 @@ class Infrastructure
         File.WriteAllText(_databaseFile, json);
     }
 
-    private static void SendEmail(EmailToSend email)
+    public static void SendEmail(EmailToSend email)
     {
         Directory.CreateDirectory(_emailOutboxFolder);
 
